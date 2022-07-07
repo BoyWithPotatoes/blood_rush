@@ -48,7 +48,6 @@ Bed.drawBottom = function ()
 end
 
 Bed.update = function (self)
-    
 end
 
 return Bed

@@ -7,7 +7,7 @@ local spritePath = "assets/sprites/doctor/"
 
 Player.new = function (id, name, x, y, control)
     local self = setmetatable({}, Player)
-    self.scale = (ScreenHeight / 32) / 7
+    self.scale = ScaleHeight / 7
 
     --init
     self.id = id
@@ -60,7 +60,6 @@ Player.new = function (id, name, x, y, control)
         (self.height / 2 + self.colliderSizeOffset * 2 - self.colliderHeightOffset) / 3
     )
     self.collider:setFixedRotation(true)
-    self.collider:setObject(self)
     self.collider:setCollisionClass("player")
     self.collider:setFriction(0)
 
@@ -85,7 +84,7 @@ end
 
 Player.update = function (self, dt)
     self:keyControl(dt)
-    self:collisionEvent()
+    self:showEventKey(dt)
     self:anim8Update(dt)
 end
 
@@ -117,18 +116,7 @@ Player.keyControl = function (self, dt)
     self:updateCollider(self.collider)
 end
 
-Player.collisionEvent = function (self)
-    --enter
-    if self.collider:enter("bed") then
-        self.interact = "bed"
-        local bed = self.collider:getEnterCollisionData("bed").collider:getObject()
-        print(self.interact)
-    end
-    --leave
-    if self.collider:exit("bed") then
-        self.interact = ""
-        print(self.interact)
-    end
+Player.showEventKey = function (self, dt)
 end
 
 Player.anim8Update = function (self, dt)
