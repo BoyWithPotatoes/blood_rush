@@ -7,7 +7,7 @@ local spritePath = "assets/sprites/doctor/"
 
 Player.new = function (id, name, x, y, control)
     local self = setmetatable({}, Player)
-    self.scale = ScaleHeight / 7
+    self.scale = ScaleHeight / 8
 
     --init
     self.id = id
@@ -19,18 +19,15 @@ Player.new = function (id, name, x, y, control)
     --attr
     self.height = 32 * self.scale
     self.width = 32 * self.scale
-    self.lastPosX = self.x
-    self.lastPosY = self.y
 
     -- state
     self.facing = "down"
-    self.interact = ""
-    self.walk = false
+    self.interact = false
     self.hold = false
     
     -- animation
     self.timer = love.math.random(4, 10)
-    self.spriteSheet = love.graphics.newImage(spritePath..id.."_sheet.png")
+    self.spriteSheet = love.graphics.newImage(spritePath.."1_sheet.png")
     self.anim8Grid = anim8.newGrid(32, 32, self.spriteSheet:getWidth(), self.spriteSheet:getHeight())
     self.anim8 = {}
     self.anim8.idle = {}
@@ -45,10 +42,7 @@ Player.new = function (id, name, x, y, control)
     self.anim8.walk.right = anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
 
     -- physics
-    self.speed = 300
-    self.velocity = {}
-    self.velocity.x = 0
-    self.velocity.y = 0
+    self.speed = Canvas.width / 5
 
     self.colliderSizeOffset = 1 * self.scale
     self.colliderHeightOffset = 5 * self.scale
@@ -67,12 +61,11 @@ Player.new = function (id, name, x, y, control)
 end
 
 Player.draw = function (self)
-    love.graphics.push()
     self:anim8Draw()
-    love.graphics.pop()
 end
 
 Player.anim8Draw = function (self)
+    love.graphics.setColor(1, 1, 1, 1)
     local y = (self.y - self.height / 4) - self.colliderHeightOffset / 2
     love.graphics.setColor(1, 1, 1, 1)
     if self.walk then
@@ -82,13 +75,24 @@ Player.anim8Draw = function (self)
     end
 end
 
+local interBtnSize = 10
+Player.drawInterButton = function (self)
+    if self.interact then
+        local x, y = self.x - interBtnSize * self.scale / 2, (self.y - interBtnSize * self.scale / 2) - 32 * self.scale
+        love.graphics.setColor(1, 0, 0, 1)
+        love.graphics.rectangle("fill", x, y, interBtnSize * self.scale, interBtnSize * self.scale)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.print(self.control[5], x + interBtnSize * self.scale / 2, y + interBtnSize * self.scale / 2, 0, AspetRatio, AspetRatio, Font:getWidth(self.control[5]) / 2, Font:getHeight(self.control[5]) / 2)
+    end
+end
+
 Player.update = function (self, dt)
-    self:keyControl(dt)
-    self:showEventKey(dt)
+    self:keyControl()
+    self:showEventKey()
     self:anim8Update(dt)
 end
 
-Player.keyControl = function (self, dt)
+Player.keyControl = function (self)
     local velX, velY = 0, 0
     self.walk = false
 
@@ -113,10 +117,40 @@ Player.keyControl = function (self, dt)
         self.walk = true
     end
     self.collider:setLinearVelocity(self.speed * velX, self.speed * velY)
-    self:updateCollider(self.collider)
+    self:updateSprite(self.collider)
 end
 
-Player.showEventKey = function (self, dt)
+Player.showEventKey = function (self)
+    local x, y = self.x, self.y
+    if self.facing == "up" then
+        y = y - 32
+    elseif self.facing == "down" then
+        y = y + 32
+    elseif self.facing == "left" then
+        x = x - 42
+    elseif self.facing == "right" then
+        x = x + 42
+    end
+    local items = World:queryCircleArea(x, y, 5 * self.scale / 2, {"donator", "bed"})
+    if #items > 0 then
+        if not self.hold then
+            for _, v in pairs(items) do
+                local obj = v:getObject()
+                if obj.name == "donator" then
+                    self.interact = true
+                end
+            end
+        else
+            for _, v in pairs(items) do
+                local obj = v:getObject()
+                if v.name == "bed" then
+                    self.interact = true
+                end
+            end
+        end
+    else
+        self.interact = false
+    end
 end
 
 Player.anim8Update = function (self, dt)
@@ -136,13 +170,14 @@ Player.anim8Update = function (self, dt)
     end
 end
 
-Player.updateCollider = function (self, collider)
+Player.updateSprite = function (self, collider)
     self.x = collider:getX()
     self.y = collider:getY()
 end
 
 Player.keyPressed = function (self, key)
-    if key == self.control[5] then
+    if self.interact and key == self.control[5] then
+        
     end
 end
 

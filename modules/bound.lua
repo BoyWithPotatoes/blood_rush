@@ -36,8 +36,4 @@ Canvas.draw = function (self)
     love.graphics.pop()
 end
 
-Canvas.update = function (self, dt)
-    
-end
-
 return Canvas
