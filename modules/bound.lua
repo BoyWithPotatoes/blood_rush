@@ -1,8 +1,8 @@
-local Canvas = {}
-Canvas.__index = Canvas
+local Bound = {}
+Bound.__index = Bound
 
-Canvas.new = function (ratio)
-    local self = setmetatable({}, Canvas)
+Bound.new = function (ratio)
+    local self = setmetatable({}, Bound)
     self.screenWidth = ScreenWidth
     self.screenHeight = ScreenHeight
     self.width = ScreenHeight * ratio
@@ -20,13 +20,13 @@ Canvas.new = function (ratio)
     return self
 end
 
-Canvas.createWall = function (self, side, posX, posY, width, height)
+Bound.createWall = function (self, side, posX, posY, width, height)
     self.collider[side] = World:newRectangleCollider(posX - width / 2, posY - height / 2, width, height)
     self.collider[side]:setType("static")
     self.collider[side]:setCollisionClass("bound")
 end
 
-Canvas.draw = function (self)
+Bound.draw = function (self)
     love.graphics.push()
     love.graphics.translate(self.screenWidth / 2, self.screenHeight / 2)
     love.graphics.setColor(1, 1, 1, 1)
@@ -36,4 +36,4 @@ Canvas.draw = function (self)
     love.graphics.pop()
 end
 
-return Canvas
+return Bound
