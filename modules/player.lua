@@ -5,7 +5,7 @@ Player.__index = Player
 
 local spritePath = "assets/sprites/doctor/"
 
-Player.new = function (id, name, x, y, control)
+Player.new = function (id, name, x, y, keyBind)
     local self = setmetatable({}, Player)
     self.scale = ScaleHeight / 8
 
@@ -14,7 +14,7 @@ Player.new = function (id, name, x, y, control)
     self.name = name
     self.x = x
     self.y = y
-    self.control = control
+    self.keyBind = keyBind
 
     --attr
     self.height = 32 * self.scale
@@ -24,6 +24,7 @@ Player.new = function (id, name, x, y, control)
     self.facing = "down"
     self.interact = false
     self.hold = false
+    self.interItem = {}
     
     -- animation
     self.timer = love.math.random(4, 10)
@@ -40,22 +41,28 @@ Player.new = function (id, name, x, y, control)
     self.anim8.walk.down = anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
     self.anim8.walk.left = anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
     self.anim8.walk.right = anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
+    self.anim8.shadow = anim8.newAnimation(self.anim8Grid(7, 8), 1)
 
     -- physics
     self.speed = Canvas.width / 5
 
-    self.colliderSizeOffset = 1 * self.scale
-    self.colliderHeightOffset = 5 * self.scale
     self.collider = World:newBSGRectangleCollider(
-        self.x - self.width / 4 - self.colliderSizeOffset,
-        self.y - self.height / 4 - self.colliderSizeOffset + self.colliderHeightOffset,
-        self.width / 2 + self.colliderSizeOffset * 2,
-        self.height / 2 + self.colliderSizeOffset * 2 - self.colliderHeightOffset,
-        (self.height / 2 + self.colliderSizeOffset * 2 - self.colliderHeightOffset) / 3
+        self.x,
+        self.y,
+        self.width / 2 + 2 * self.scale,
+        self.height / 3 + 2 * self.scale,
+        (self.height / 3 + 2 * self.scale) / 3
     )
     self.collider:setFixedRotation(true)
     self.collider:setCollisionClass("player")
     self.collider:setFriction(0)
+
+    self.sensor = World:newCircleCollider(
+        self.x - self.width, self.y, 0.5
+    )
+    self.sensor:setFixedRotation(true)
+    self.sensor:setType("dynamic")
+    self.sensor:setCollisionClass("plrSensor")
 
     return self
 end
@@ -65,14 +72,19 @@ Player.draw = function (self)
 end
 
 Player.anim8Draw = function (self)
-    love.graphics.setColor(1, 1, 1, 1)
-    local y = (self.y - self.height / 4) - self.colliderHeightOffset / 2
+    local y = self.y - self.height / 3
     love.graphics.setColor(1, 1, 1, 1)
     if self.walk then
         self.anim8.walk[self.facing]:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
     else
         self.anim8.idle[self.facing]:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
     end
+end
+
+Player.drawShadow = function (self)
+    local y = self.y - self.height / 3 + 2 * self.scale
+    love.graphics.setColor(1, 1, 1, 0.3)
+    self.anim8.shadow:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
 end
 
 local interBtnSize = 10
@@ -82,74 +94,94 @@ Player.drawInterButton = function (self)
         love.graphics.setColor(1, 0, 0, 1)
         love.graphics.rectangle("fill", x, y, interBtnSize * self.scale, interBtnSize * self.scale)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.print(self.control[5], x + interBtnSize * self.scale / 2, y + interBtnSize * self.scale / 2, 0, AspetRatio, AspetRatio, Font:getWidth(self.control[5]) / 2, Font:getHeight(self.control[5]) / 2)
+        local upperCaseInterButon = string.upper(self.keyBind[5])
+        love.graphics.print(
+            upperCaseInterButon,
+            x + (interBtnSize * self.scale) / 2,
+            y + (interBtnSize * self.scale) / 2,
+            0,
+            AspetRatio,
+            AspetRatio,
+            Font:getWidth(upperCaseInterButon) / 2,
+            FontHeight / 2
+    )
     end
 end
 
 Player.update = function (self, dt)
-    self:keyControl()
+    self:control()
+    self:updatePosition()
+    self:updateSensor()
     self:showEventKey()
     self:anim8Update(dt)
 end
 
-Player.keyControl = function (self)
+Player.control = function (self)
     local velX, velY = 0, 0
     self.walk = false
 
-    if love.keyboard.isDown(self.control[1]) then
-        velY = -1
-        self.facing = "up"
-        self.walk = true
-    end
-    if love.keyboard.isDown(self.control[2]) then
-        velY = 1
-        self.facing = "down"
-        self.walk = true
-    end
-    if love.keyboard.isDown(self.control[3]) then
+    if love.keyboard.isDown(self.keyBind[3]) then
         velX = -1
         self.facing = "left"
         self.walk = true
     end
-    if love.keyboard.isDown(self.control[4]) then
+    if love.keyboard.isDown(self.keyBind[4]) then
         velX = 1
         self.facing = "right"
         self.walk = true
     end
+    if love.keyboard.isDown(self.keyBind[1]) then
+        velY = -1
+        self.facing = "up"
+        self.walk = true
+    end
+    if love.keyboard.isDown(self.keyBind[2]) then
+        velY = 1
+        self.facing = "down"
+        self.walk = true
+    end
     self.collider:setLinearVelocity(self.speed * velX, self.speed * velY)
-    self:updateSprite(self.collider)
+    self.sensor:setLinearVelocity(self.speed * velX, self.speed * velY)
+end
+
+Player.updatePosition = function (self)
+    self.x = self.collider:getX()
+    self.y = self.collider:getY()
+end
+
+Player.updateSensor = function (self)
+    local x, y = self.x, self.y
+    if self.facing == "up" then
+        y = y - self.height / 4
+    elseif self.facing == "down" then
+        y = y + self.height / 4
+    elseif self.facing == "left" then
+        x = x - self.width / 3
+    elseif self.facing == "right" then
+        x = x + self.width / 3
+    end
+    self.sensor:setPosition(x, y)
 end
 
 Player.showEventKey = function (self)
-    local x, y = self.x, self.y
-    if self.facing == "up" then
-        y = y - 32
-    elseif self.facing == "down" then
-        y = y + 32
-    elseif self.facing == "left" then
-        x = x - 42
-    elseif self.facing == "right" then
-        x = x + 42
-    end
-    local items = World:queryCircleArea(x, y, 5 * self.scale / 2, {"donator", "bed"})
-    if #items > 0 then
-        if not self.hold then
-            for _, v in pairs(items) do
-                local obj = v:getObject()
-                if obj.name == "donator" then
-                    self.interact = true
-                end
-            end
-        else
-            for _, v in pairs(items) do
-                local obj = v:getObject()
-                if v.name == "bed" then
-                    self.interact = true
-                end
-            end
+    if not self.hold then
+        if self.sensor:enter("donator") then
+            self.interItem = self.sensor:getEnterCollisionData("donator").collider:getObject()
+            self.interact = true
         end
-    else
-        self.interact = false
+        if self.sensor:exit("donator") then
+            self.interItem = {}
+            self.interact = false
+        end
+
+        if self.sensor:enter("patient") then
+            self.interItem = self.sensor:getEnterCollisionData("patient").collider:getObject()
+            self.interact = true
+        end
+        if self.sensor:exit("patient") then
+            self.interItem = {}
+            self.interact = false
+        end
     end
 end
 
@@ -170,14 +202,10 @@ Player.anim8Update = function (self, dt)
     end
 end
 
-Player.updateSprite = function (self, collider)
-    self.x = collider:getX()
-    self.y = collider:getY()
-end
-
-Player.keyPressed = function (self, key)
-    if self.interact and key == self.control[5] then
-        
+Player.keypressed = function (self, key)
+    if self.interact and key == self.keyBind[5] then
+        if self.interItem.name == "donator" then
+        end
     end
 end
 

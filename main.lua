@@ -4,6 +4,7 @@ local _Player = require("modules.player")
 local _Bound = require("modules.bound")
 local _Bed = require("modules.bed")
 local _Donator = require("modules.donator")
+local _Patient = require("modules.patient")
 
 local loadFunc = function (table, func, arg)
     for _, v in pairs(table) do
@@ -22,13 +23,15 @@ love.graphics.setFont(
     )
 )
 Font = love.graphics.getFont()
+FontHeight = Font:getHeight()
 
 World = WindField.newWorld(0, 0)
 World:addCollisionClass("bound")
-World:addCollisionClass("donatorArea")
 World:addCollisionClass("bed")
-World:addCollisionClass("donator", {ignores = {"donator", "bound", "donatorArea"}})
-World:addCollisionClass("player", {ignores = {"player", "donator"}})
+World:addCollisionClass("donator", {ignores = {"donator"}})
+World:addCollisionClass("patient", {ignores = {"patient", "donator"}})
+World:addCollisionClass("plrSensor", {ignores = {"All"}})
+World:addCollisionClass("player", {ignores = {"player", "plrSensor"}})
 World:setQueryDebugDrawing(true)
 
 -- global variable
@@ -42,7 +45,7 @@ Canvas = _Bound.new(5 / 4)
 function love.load()
     Player = {
         _Player.new(1, "P1", ScreenWidth / 2, ScreenHeight / 2, {"w", "s", "a", "d", "k"}),
-        --PlayerM.new(2, "P1", ScreenWidth / 2, ScreenHeight / 2, {"up", "down", "left", "right", "m"})
+        --_Player.new(2, "P2", ScreenWidth / 2, ScreenHeight / 2, {"up", "down", "left", "right", "m"})
     }
     Bed = {
         _Bed.new(Canvas.width * 35 / 100, Canvas.height * 35 / 100),
@@ -54,16 +57,28 @@ function love.load()
         _Donator.new(1, 1),
         _Donator.new(1, 2),
         _Donator.new(2, 1),
-        _Donator.new(2, 2)
+        _Donator.new(2, 2),
+        _Donator.new(1, 0)
     }
+    _Donator.drawArea()
+    Patient = {
+        _Patient.new(1, 1),
+        _Patient.new(1, 2),
+        _Patient.new(2, 1),
+        _Patient.new(2, 2),
+        _Patient.new(2, 0),
+    }
+    _Patient.drawArea()
 end
 
 function love.draw()
     Canvas:draw()
+    loadFunc(Player, "drawShadow")
     loadFunc(Bed, "drawBottom")
+    loadFunc(Donator, "draw")
+    loadFunc(Patient, "draw")
     loadFunc(Player, "draw")
     loadFunc(Bed, "drawTop")
-    loadFunc(Donator, "draw")
     loadFunc(Player, "drawInterButton")
     debug()
 end
@@ -72,14 +87,11 @@ function love.update(dt)
     World:update(dt)
     loadFunc(Player, "update", dt)
     loadFunc(Donator, "update", dt)
-end
-
-function love.quit()
-    
+    loadFunc(Patient, "update", dt)
 end
 
 function love.keypressed(key)
-    loadFunc(Player, "keyPressed", key)
+    loadFunc(Player, "keypressed", key)
     if key == "kp0" then
         love.event.quit()
     end
@@ -88,7 +100,6 @@ end
 -- debugging
 function debug ()
     World:draw()
-    love.graphics.print(tostring(Player[1].walk)..", "..Player[1].facing, 1, 1, 0, 1.5, 1.5)
     love.graphics.print(Player[1].x, 1, 21, 0, 1.5, 1.5)
     love.graphics.print(Player[1].y, 1, 41, 0, 1.5, 1.5)
     love.graphics.print(tostring(love.timer.getFPS()), 1, ScreenHeight - 25, 0, 1.5, 1.5)

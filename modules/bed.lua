@@ -3,7 +3,7 @@ Bed.__index = Bed
 
 Bed.new = function (x, y, state)
     local self = setmetatable({}, Bed)
-    self.name = "Bed"
+    self.name = "bed"
     self.offset = 50
     self.width = Player[1].width / 2 + 30
     self.height = Player[1].height + 30

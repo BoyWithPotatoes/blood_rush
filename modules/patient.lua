@@ -1,10 +1,10 @@
-local Donator = {}
-Donator.__index = Donator
+local Patient = {}
+Patient.__index = Patient
 
 local typeList = {"A", "B", "AB", "O"}
 
-Donator.new = function (row, state, t)
-    local self = setmetatable({}, Donator)
+Patient.new = function (row, state, t)
+    local self = setmetatable({}, Patient)
     self.scale = ScaleHeight / 8
 
     --init
@@ -17,7 +17,9 @@ Donator.new = function (row, state, t)
     self.height = 32 * self.scale
     self.width = 16 * self.scale
 
-    self.x = self.state == 1 and Canvas.originX + self.width + 2 * self.scale or self.state == 2 and Canvas.originX + self.scale or Canvas.originX - self.width  - self.scale
+    self.x = self.state == 1 and Canvas.originX + Canvas.width - (self.width * 2 + 2.05 * self.scale) or
+             self.state == 2 and Canvas.originX + Canvas.width - self.width - self.scale or
+             Canvas.originX + Canvas.width
     self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
 
     --physics
@@ -26,27 +28,27 @@ Donator.new = function (row, state, t)
     self.collider = World:newRectangleCollider(self.x, hitboxY, self.width, hitboxH)
     self.collider:setFixedRotation(true)
     self.collider:setType("kinematic")
-    self.collider:setCollisionClass("donator")
+    self.collider:setCollisionClass("patient")
     self.collider:setFriction(0)
     self.collider:setObject(self)
 
     return self
 end
 
-Donator.draw = function (self)
+Patient.draw = function (self)
     self:drawDebug()
     self:drawType()
 end
 
-Donator.drawDebug = function (self)
-    love.graphics.setColor(0, 1, 0, 1)
+Patient.drawDebug = function (self)
+    love.graphics.setColor(1, 0, 0, 1)
     if self.row ~= 1 then
-        love.graphics.setColor(0, 0, 1, 1)
+        love.graphics.setColor(1, 1, 0, 1)
     end
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 end
 
-Donator.drawType = function (self)
+Patient.drawType = function (self)
     love.graphics.setColor(1, 1, 1 ,1)
     love.graphics.print(
         self.type,
@@ -60,16 +62,18 @@ Donator.drawType = function (self)
     )
 end
 
-Donator.drawArea = function ()
+Patient.drawArea = function ()
     local scale = ScaleHeight / 8
     local width = 16 * scale
-    local area = World:newRectangleCollider(Canvas.originX, Canvas.originY, width * 2 + 2.05 * scale, Canvas.height)
+    local area = World:newRectangleCollider(Canvas.originX + Canvas.width - (width * 2 + 2.05 * scale), Canvas.originY, width * 2 + 2.05 * scale, Canvas.height)
     area:setType("static")
 end
 
-Donator.update = function (self, dt)
-    self.x = self.state == 1 and Canvas.originX + self.width + 2 * self.scale or self.state == 2 and Canvas.originX + self.scale or Canvas.originX - self.width - self.scale
+Patient.update = function (self, dt)
+    self.x = self.state == 1 and Canvas.originX + Canvas.width - (self.width * 2 + 2.05 * self.scale) or
+             self.state == 2 and Canvas.originX + Canvas.width - self.width - self.scale or
+             Canvas.originX + Canvas.width
     self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
 end
 
-return Donator
+return Patient
