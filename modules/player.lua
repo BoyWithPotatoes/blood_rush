@@ -18,12 +18,11 @@ Player.new = function (id, name, x, y, keyBind)
 
     --attr
     self.height = 32 * self.scale
-    self.width = 32 * self.scale
+    self.width = 16 * self.scale
 
     -- state
     self.facing = "down"
     self.interact = false
-    self.hold = false
     self.interItem = {}
     
     -- animation
@@ -49,8 +48,8 @@ Player.new = function (id, name, x, y, keyBind)
     self.collider = World:newBSGRectangleCollider(
         self.x,
         self.y,
-        self.width / 2 + 2 * self.scale,
-        self.height / 3 + 2 * self.scale,
+        self.width + 2 * self.scale,
+        self.height / 4 + 2 * self.scale,
         (self.height / 3 + 2 * self.scale) / 3
     )
     self.collider:setFixedRotation(true)
@@ -58,21 +57,25 @@ Player.new = function (id, name, x, y, keyBind)
     self.collider:setFriction(0)
 
     self.sensor = World:newCircleCollider(
-        self.x - self.width, self.y, 0.5
+        self.x, self.y, 0.5
     )
     self.sensor:setFixedRotation(true)
     self.sensor:setType("dynamic")
     self.sensor:setCollisionClass("plrSensor")
 
+    self.hold = false
+    self.holdItem = {}
+
     return self
 end
 
+--------------------------------------------------------------
 Player.draw = function (self)
     self:anim8Draw()
 end
 
 Player.anim8Draw = function (self)
-    local y = self.y - self.height / 3
+    local y = self.y - self.height / 5.5
     love.graphics.setColor(1, 1, 1, 1)
     if self.walk then
         self.anim8.walk[self.facing]:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
@@ -82,7 +85,7 @@ Player.anim8Draw = function (self)
 end
 
 Player.drawShadow = function (self)
-    local y = self.y - self.height / 3 + 2 * self.scale
+    local y = self.y - self.height / 5.5 + 2 * self.scale
     love.graphics.setColor(1, 1, 1, 0.3)
     self.anim8.shadow:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
 end
@@ -108,6 +111,30 @@ Player.drawInterButton = function (self)
     end
 end
 
+Player.drawHold = function (self)
+    if not self.hold then
+        return
+    end
+    love.graphics.setColor(self.holdItem.color)
+    love.graphics.rectangle("fill", self.x - self.height / 2, self.y - self.height - (2 * self.scale), self.height, self.width)
+    self:drawType()
+end
+
+Player.drawType = function (self)
+    love.graphics.setColor(1, 1, 1 ,1)
+    love.graphics.print(
+        self.holdItem.type,
+        self.x,
+        self.y - self.height + 6 * self.scale,
+        0,
+        AspetRatio,
+        AspetRatio,
+        Font:getWidth(self.holdItem.type) / 2,
+        FontHeight / 2
+    )
+end
+
+-------------------------------------------------------------
 Player.update = function (self, dt)
     self:control()
     self:updatePosition()
@@ -152,13 +179,13 @@ end
 Player.updateSensor = function (self)
     local x, y = self.x, self.y
     if self.facing == "up" then
-        y = y - self.height / 4
+        y = y - self.height / 5
     elseif self.facing == "down" then
-        y = y + self.height / 4
+        y = y + self.height / 5
     elseif self.facing == "left" then
-        x = x - self.width / 3
+        x = x - self.width / 1.5
     elseif self.facing == "right" then
-        x = x + self.width / 3
+        x = x + self.width / 1.5
     end
     self.sensor:setPosition(x, y)
 end
@@ -182,6 +209,44 @@ Player.showEventKey = function (self)
             self.interItem = {}
             self.interact = false
         end
+    else
+        if self.sensor:stay("donator") or self.sensor:enter("donator") then
+            local donator = self.sensor:getEnterCollisionData("donator").collider:getObject()
+            if(self.holdItem == donator) then
+                self.interact = true
+                self.interItem = donator
+            end
+        end
+        if self.sensor:exit("donator") then
+            self.interItem = {}
+            self.interact = false
+        end
+
+        if self.sensor:stay("patient") or self.sensor:enter("patient") then
+            local patient = self.sensor:getEnterCollisionData("patient").collider:getObject()
+            if(self.holdItem == patient) then
+                self.interact = true
+                self.interItem = patient
+            end
+        end
+        if self.sensor:exit("patient") then
+            self.interItem = {}
+            self.interact = false
+        end
+
+
+        if self.sensor:enter("bed") then
+            local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
+            if next(bed.itemOnBed) then
+                return
+            end
+            self.interItem = bed
+            self.interact = true
+        end
+        if self.sensor:exit("bed") then
+            self.interItem = {}
+            self.interact = false
+        end
     end
 end
 
@@ -202,9 +267,38 @@ Player.anim8Update = function (self, dt)
     end
 end
 
+---------------------------------------------------------
 Player.keypressed = function (self, key)
     if self.interact and key == self.keyBind[5] then
-        if self.interItem.name == "donator" then
+        if self.interItem.name == "donator" or self.interItem.name == "patient" then
+            if next(self.holdItem) then
+                self.holdItem.holded = false
+                self.interItem = self.holdItem
+                self.interact = true
+                self.hold = false
+                self.holdItem = {}
+                return
+            end
+            self.hold = true
+            self.holdItem = self.interItem
+            self.holdItem.holded = true
+            
+            self.interact = false
+            self.interItem = {}
+        elseif self.interItem.name == "bed" then
+            self.holdItem.collider:destroy()
+            if self.holdItem.name == "donator" then
+                table.remove(Donator, TableFind(Donator, self.holdItem))
+            elseif self.holdItem.name == "patient" then
+                table.remove(Patient, TableFind(Patient, self.holdItem))
+            end
+            self.interItem.itemOnBed = self.holdItem
+            self.hold = false
+            self.interact = false
+            
+
+            self.interItem = {}
+            self.holdItem = {}
         end
     end
 end

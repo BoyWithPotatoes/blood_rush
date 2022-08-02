@@ -1,30 +1,32 @@
 local Patient = {}
 Patient.__index = Patient
 
-local typeList = {"A", "B", "AB", "O"}
-
 Patient.new = function (row, state, t)
     local self = setmetatable({}, Patient)
     self.scale = ScaleHeight / 8
 
     --init
-    self.type = t or typeList[love.math.random(1, 4)]
+    self.type = t or TypeList[love.math.random(1, 4)]
 
     --attr
-    self.name = "donator"
+    self.name = "patient"
     self.row = row
     self.state = state
     self.height = 32 * self.scale
     self.width = 16 * self.scale
+
+    self.holded = false
 
     self.x = self.state == 1 and Canvas.originX + Canvas.width - (self.width * 2 + 2.05 * self.scale) or
              self.state == 2 and Canvas.originX + Canvas.width - self.width - self.scale or
              Canvas.originX + Canvas.width
     self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
 
+    self.color = {love.math.colorFromBytes(255, 255, 0)}
+
     --physics
-    local hitboxH = self.row == 1 and self.height * 93 / 100 or self.height * 50 / 100
-    local hitboxY = self.row == 1 and self.y or self.y + self.height * 50 / 100
+    local hitboxH = self.row == 1 and self.height * 93 / 100 or self.height * 52 / 100
+    local hitboxY = self.row == 1 and self.y or self.y + self.height * 48 / 100
     self.collider = World:newRectangleCollider(self.x, hitboxY, self.width, hitboxH)
     self.collider:setFixedRotation(true)
     self.collider:setType("kinematic")
@@ -37,15 +39,15 @@ end
 
 Patient.draw = function (self)
     self:drawDebug()
-    self:drawType()
 end
 
 Patient.drawDebug = function (self)
-    love.graphics.setColor(1, 0, 0, 1)
-    if self.row ~= 1 then
-        love.graphics.setColor(1, 1, 0, 1)
+    if self.holded then
+        return
     end
+    love.graphics.setColor(self.color)
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    self:drawType()
 end
 
 Patient.drawType = function (self)
@@ -70,10 +72,7 @@ Patient.drawArea = function ()
 end
 
 Patient.update = function (self, dt)
-    self.x = self.state == 1 and Canvas.originX + Canvas.width - (self.width * 2 + 2.05 * self.scale) or
-             self.state == 2 and Canvas.originX + Canvas.width - self.width - self.scale or
-             Canvas.originX + Canvas.width
-    self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
+    
 end
 
 return Patient

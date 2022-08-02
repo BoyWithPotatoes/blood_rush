@@ -1,14 +1,14 @@
 local Donator = {}
 Donator.__index = Donator
 
-local typeList = {"A", "B", "AB", "O"}
+local timer = 3
 
 Donator.new = function (row, state, t)
     local self = setmetatable({}, Donator)
     self.scale = ScaleHeight / 8
 
     --init
-    self.type = t or typeList[love.math.random(1, 4)]
+    self.type = t or TypeList[love.math.random(1, 4)]
 
     --attr
     self.name = "donator"
@@ -17,12 +17,16 @@ Donator.new = function (row, state, t)
     self.height = 32 * self.scale
     self.width = 16 * self.scale
 
+    self.holded = false
+
     self.x = self.state == 1 and Canvas.originX + self.width + 2 * self.scale or self.state == 2 and Canvas.originX + self.scale or Canvas.originX - self.width  - self.scale
     self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
 
+    self.color = {love.math.colorFromBytes(0, 255, 0)}
+
     --physics
-    local hitboxH = self.row == 1 and self.height * 93 / 100 or self.height * 50 / 100
-    local hitboxY = self.row == 1 and self.y or self.y + self.height * 50 / 100
+    local hitboxH = self.row == 1 and self.height * 93 / 100 or self.height * 52 / 100
+    local hitboxY = self.row == 1 and self.y or self.y + self.height * 48 / 100
     self.collider = World:newRectangleCollider(self.x, hitboxY, self.width, hitboxH)
     self.collider:setFixedRotation(true)
     self.collider:setType("kinematic")
@@ -35,15 +39,15 @@ end
 
 Donator.draw = function (self)
     self:drawDebug()
-    self:drawType()
 end
 
 Donator.drawDebug = function (self)
-    love.graphics.setColor(0, 1, 0, 1)
-    if self.row ~= 1 then
-        love.graphics.setColor(0, 0, 1, 1)
+    if self.holded then
+        return
     end
+    love.graphics.setColor(self.color)
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    self:drawType()
 end
 
 Donator.drawType = function (self)
@@ -68,8 +72,11 @@ Donator.drawArea = function ()
 end
 
 Donator.update = function (self, dt)
-    self.x = self.state == 1 and Canvas.originX + self.width + 2 * self.scale or self.state == 2 and Canvas.originX + self.scale or Canvas.originX - self.width - self.scale
-    self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
+    
+end
+
+Donator.statTimer = function (self)
+    
 end
 
 return Donator
