@@ -1,20 +1,18 @@
 local Bed = {}
 Bed.__index = Bed
 
-Bed.new = function (x, y, state)
+Bed.new = function (x, y)
     local self = setmetatable({}, Bed)
-    self.scale = ScaleHeight / 8
     self.name = "bed"
-    self.offset = 6 * self.scale
-    self.width = 16 * self.scale + self.offset
-    self.height = 32 * self.scale + self.offset
+    self.width = 20 * Scale
+    self.height = 32 * Scale
+    self.x = x - self.width / 2
+    self.y = y
 
-    self.x = (Canvas.originX + x) - self.width / 2
-    self.y = (Canvas.originY + y) - self.height / 2
+    self.occ = false
+    self.item = {}
 
-    self.state = state or 0
-
-    self.itemOnBed = {}
+    self.sprite = love.graphics.newImage("assets/sprites/stuff/bed.png")
 
     self.collider = World:newRectangleCollider(self.x, self.y, self.width, self.height)
     self.collider:setObject(self)
@@ -23,44 +21,20 @@ Bed.new = function (x, y, state)
     return self
 end
 
-Bed.drawTop = function (self)
-    love.graphics.setColor(love.math.colorFromBytes(145, 148, 126))
-    self:drawItem()
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height / 3)
-    self:drawType()
+---------------------------------------------
+Bed.draw = function (self)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(self.sprite, self.x, self.y - 6 * Scale, 0, Scale, Scale)
 end
 
-Bed.drawBottom = function (self)
-    love.graphics.setColor(love.math.colorFromBytes(145, 148, 126))
-    self:drawItem()
-    love.graphics.rectangle("fill", self.x, self.y + self.height / 3, self.width, self.height * 2 / 3)
+Bed.drawShadow = function (self)
+    love.graphics.setColor(0, 0, 0, 0.3)
+    love.graphics.rectangle("fill", self.x, self.y + 8 * Scale, self.width, self.height)
 end
 
-Bed.drawItem = function (self)
-   if next(self.itemOnBed) then
-        love.graphics.setColor(self.itemOnBed.color)
-   end
-end
+-------------------------------------------
+Bed.update = function (self, dt)
 
-Bed.drawType = function (self)
-    if not next(self.itemOnBed) then
-        return
-   end
-    love.graphics.setColor(1, 1, 1 ,1)
-    love.graphics.print(
-        self.itemOnBed.type,
-        self.x + self.width / 2,
-        self.y + self.height / 2,
-        0,
-        AspetRatio,
-        AspetRatio,
-        Font:getWidth(self.itemOnBed.type) / 2,
-        FontHeight / 2
-    )
-end
-
-Bed.update = function (self)
-    
 end
 
 return Bed

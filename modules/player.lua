@@ -1,5 +1,3 @@
-local anim8 = require("library.anim8")
-
 local Player = {}
 Player.__index = Player
 
@@ -7,50 +5,48 @@ local spritePath = "assets/sprites/doctor/"
 
 Player.new = function (id, name, x, y, keyBind)
     local self = setmetatable({}, Player)
-    self.scale = ScaleHeight / 8
 
     --init
     self.id = id
     self.name = name
-    self.x = x
-    self.y = y
     self.keyBind = keyBind
 
     --attr
-    self.height = 32 * self.scale
-    self.width = 16 * self.scale
+    self.height = 32 * Scale
+    self.width = 16 * Scale
+
+    self.x = x - self.width / 2
+    self.y = y - self.height / 2
 
     -- state
     self.facing = "down"
     self.interact = false
     self.interItem = {}
+    self.speed = Canvas.width / 3
     
     -- animation
     self.timer = love.math.random(4, 10)
     self.spriteSheet = love.graphics.newImage(spritePath.."1_sheet.png")
-    self.anim8Grid = anim8.newGrid(32, 32, self.spriteSheet:getWidth(), self.spriteSheet:getHeight())
+    self.anim8Grid = Anim8.newGrid(32, 32, self.spriteSheet:getWidth(), self.spriteSheet:getHeight())
     self.anim8 = {}
     self.anim8.idle = {}
-    self.anim8.idle.up = anim8.newAnimation(self.anim8Grid("1-6", 7), 0.0416667)
-    self.anim8.idle.down = anim8.newAnimation(self.anim8Grid("1-6", 1), 0.0416667)
-    self.anim8.idle.left = anim8.newAnimation(self.anim8Grid("1-6", 3), 0.0416667)
-    self.anim8.idle.right = anim8.newAnimation(self.anim8Grid("1-6", 5), 0.0416667)
+    self.anim8.idle.up = Anim8.newAnimation(self.anim8Grid("1-6", 7), 0.0416667)
+    self.anim8.idle.down = Anim8.newAnimation(self.anim8Grid("1-6", 1), 0.0416667)
+    self.anim8.idle.left = Anim8.newAnimation(self.anim8Grid("1-6", 3), 0.0416667)
+    self.anim8.idle.right = Anim8.newAnimation(self.anim8Grid("1-6", 5), 0.0416667)
     self.anim8.walk = {}
-    self.anim8.walk.up = anim8.newAnimation(self.anim8Grid("1-6", 8), 0.0833333)
-    self.anim8.walk.down = anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
-    self.anim8.walk.left = anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
-    self.anim8.walk.right = anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
-    self.anim8.shadow = anim8.newAnimation(self.anim8Grid(7, 8), 1)
-
-    -- physics
-    self.speed = Canvas.width / 5
+    self.anim8.walk.up = Anim8.newAnimation(self.anim8Grid("1-6", 8), 0.0833333)
+    self.anim8.walk.down = Anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
+    self.anim8.walk.left = Anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
+    self.anim8.walk.right = Anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
+    self.anim8.shadow = Anim8.newAnimation(self.anim8Grid(7, 8), 1)
 
     self.collider = World:newBSGRectangleCollider(
         self.x,
         self.y,
-        self.width + 2 * self.scale,
-        self.height / 4 + 2 * self.scale,
-        (self.height / 3 + 2 * self.scale) / 3
+        self.width + 2 * Scale,
+        self.height / 4 + 2 * Scale,
+        3 * Scale
     )
     self.collider:setFixedRotation(true)
     self.collider:setCollisionClass("player")
@@ -78,36 +74,35 @@ Player.anim8Draw = function (self)
     local y = self.y - self.height / 5.5
     love.graphics.setColor(1, 1, 1, 1)
     if self.walk then
-        self.anim8.walk[self.facing]:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
+        self.anim8.walk[self.facing]:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
     else
-        self.anim8.idle[self.facing]:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
+        self.anim8.idle[self.facing]:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
     end
 end
 
 Player.drawShadow = function (self)
-    local y = self.y - self.height / 5.5 + 2 * self.scale
+    local y = self.y - self.height / 5.5 + 2 * Scale
     love.graphics.setColor(1, 1, 1, 0.3)
-    self.anim8.shadow:draw(self.spriteSheet, self.x, y, 0, self.scale, self.scale, 32 / 2, 32 / 2)
+    self.anim8.shadow:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
 end
 
-local interBtnSize = 10
+local interBtnSize = 8
 Player.drawInterButton = function (self)
     if self.interact then
-        local x, y = self.x - interBtnSize * self.scale / 2, (self.y - interBtnSize * self.scale / 2) - 32 * self.scale
+        local x, y = self.x - interBtnSize * Scale / 2, (self.y - interBtnSize * Scale / 2) - 26 * Scale
         love.graphics.setColor(1, 0, 0, 1)
-        love.graphics.rectangle("fill", x, y, interBtnSize * self.scale, interBtnSize * self.scale)
+        love.graphics.rectangle("fill", x, y, interBtnSize * Scale, interBtnSize * Scale)
         love.graphics.setColor(1, 1, 1, 1)
         local upperCaseInterButon = string.upper(self.keyBind[5])
         love.graphics.print(
             upperCaseInterButon,
-            x + (interBtnSize * self.scale) / 2,
-            y + (interBtnSize * self.scale) / 2,
+            x + (interBtnSize * Scale) / 2,
+            y + (interBtnSize * Scale) / 2,
             0,
-            AspetRatio,
-            AspetRatio,
+            0.4 * Scale, 0.4 * Scale,
             Font:getWidth(upperCaseInterButon) / 2,
             FontHeight / 2
-    )
+        )
     end
 end
 
@@ -116,7 +111,7 @@ Player.drawHold = function (self)
         return
     end
     love.graphics.setColor(self.holdItem.color)
-    love.graphics.rectangle("fill", self.x - self.height / 2, self.y - self.height - (2 * self.scale), self.height, self.width)
+    love.graphics.rectangle("fill", self.x - self.height / 2, self.y - self.height - (2 * Scale), self.height, self.width)
     self:drawType()
 end
 
@@ -125,7 +120,7 @@ Player.drawType = function (self)
     love.graphics.print(
         self.holdItem.type,
         self.x,
-        self.y - self.height + 6 * self.scale,
+        self.y - self.height + 6 * Scale,
         0,
         AspetRatio,
         AspetRatio,
@@ -139,7 +134,7 @@ Player.update = function (self, dt)
     self:control()
     self:updatePosition()
     self:updateSensor()
-    self:showEventKey()
+    self:updateInteract()
     self:anim8Update(dt)
 end
 
@@ -190,63 +185,9 @@ Player.updateSensor = function (self)
     self.sensor:setPosition(x, y)
 end
 
-Player.showEventKey = function (self)
-    if not self.hold then
-        if self.sensor:enter("donator") then
-            self.interItem = self.sensor:getEnterCollisionData("donator").collider:getObject()
-            self.interact = true
-        end
-        if self.sensor:exit("donator") then
-            self.interItem = {}
-            self.interact = false
-        end
-
-        if self.sensor:enter("patient") then
-            self.interItem = self.sensor:getEnterCollisionData("patient").collider:getObject()
-            self.interact = true
-        end
-        if self.sensor:exit("patient") then
-            self.interItem = {}
-            self.interact = false
-        end
-    else
-        if self.sensor:stay("donator") or self.sensor:enter("donator") then
-            local donator = self.sensor:getEnterCollisionData("donator").collider:getObject()
-            if(self.holdItem == donator) then
-                self.interact = true
-                self.interItem = donator
-            end
-        end
-        if self.sensor:exit("donator") then
-            self.interItem = {}
-            self.interact = false
-        end
-
-        if self.sensor:stay("patient") or self.sensor:enter("patient") then
-            local patient = self.sensor:getEnterCollisionData("patient").collider:getObject()
-            if(self.holdItem == patient) then
-                self.interact = true
-                self.interItem = patient
-            end
-        end
-        if self.sensor:exit("patient") then
-            self.interItem = {}
-            self.interact = false
-        end
-
-
-        if self.sensor:enter("bed") then
-            local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
-            if next(bed.itemOnBed) then
-                return
-            end
-            self.interItem = bed
-            self.interact = true
-        end
-        if self.sensor:exit("bed") then
-            self.interItem = {}
-            self.interact = false
-        end
+Player.updateInteract = function (self)
+    if self.sensor:enter("donator") then
+        self.interact = true
     end
 end
 
@@ -270,36 +211,6 @@ end
 ---------------------------------------------------------
 Player.keypressed = function (self, key)
     if self.interact and key == self.keyBind[5] then
-        if self.interItem.name == "donator" or self.interItem.name == "patient" then
-            if next(self.holdItem) then
-                self.holdItem.holded = false
-                self.interItem = self.holdItem
-                self.interact = true
-                self.hold = false
-                self.holdItem = {}
-                return
-            end
-            self.hold = true
-            self.holdItem = self.interItem
-            self.holdItem.holded = true
-            
-            self.interact = false
-            self.interItem = {}
-        elseif self.interItem.name == "bed" then
-            self.holdItem.collider:destroy()
-            if self.holdItem.name == "donator" then
-                table.remove(Donator, TableFind(Donator, self.holdItem))
-            elseif self.holdItem.name == "patient" then
-                table.remove(Patient, TableFind(Patient, self.holdItem))
-            end
-            self.interItem.itemOnBed = self.holdItem
-            self.hold = false
-            self.interact = false
-            
-
-            self.interItem = {}
-            self.holdItem = {}
-        end
     end
 end
 

@@ -1,9 +1,10 @@
 local Patient = {}
 Patient.__index = Patient
 
+local downArea, upArea
+
 Patient.new = function (row, state, t)
     local self = setmetatable({}, Patient)
-    self.scale = ScaleHeight / 8
 
     --init
     self.type = t or TypeList[love.math.random(1, 4)]
@@ -12,27 +13,19 @@ Patient.new = function (row, state, t)
     self.name = "patient"
     self.row = row
     self.state = state
-    self.height = 32 * self.scale
-    self.width = 16 * self.scale
+    self.height = 32 * Scale
+    self.width = 16 * Scale
 
     self.holded = false
 
-    self.x = self.state == 1 and Canvas.originX + Canvas.width - (self.width * 2 + 2.05 * self.scale) or
-             self.state == 2 and Canvas.originX + Canvas.width - self.width - self.scale or
+    self.x = self.state == 1 and Canvas.originX + Canvas.width - (self.width * 2 + 2.05 * Scale) or
+             self.state == 2 and Canvas.originX + Canvas.width - self.width - Scale or
              Canvas.originX + Canvas.width
-    self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * self.scale or Canvas.height / 2
+    self.y = self.row == 1 and Canvas.height / 2 - self.height / 3 - 4 * Scale or Canvas.height / 2
 
     self.color = {love.math.colorFromBytes(255, 255, 0)}
 
     --physics
-    local hitboxH = self.row == 1 and self.height * 93 / 100 or self.height * 52 / 100
-    local hitboxY = self.row == 1 and self.y or self.y + self.height * 48 / 100
-    self.collider = World:newRectangleCollider(self.x, hitboxY, self.width, hitboxH)
-    self.collider:setFixedRotation(true)
-    self.collider:setType("kinematic")
-    self.collider:setCollisionClass("patient")
-    self.collider:setFriction(0)
-    self.collider:setObject(self)
 
     return self
 end
@@ -55,7 +48,7 @@ Patient.drawType = function (self)
     love.graphics.print(
         self.type,
         self.x + self.width / 2 ,
-        self.y + FontHeight + 2 * self.scale,
+        self.y + FontHeight + 2 * Scale,
         0,
         AspetRatio,
         AspetRatio,
@@ -64,15 +57,15 @@ Patient.drawType = function (self)
     )
 end
 
-Patient.drawArea = function ()
-    local scale = ScaleHeight / 8
-    local width = 16 * scale
-    local area = World:newRectangleCollider(Canvas.originX + Canvas.width - (width * 2 + 2.05 * scale), Canvas.originY, width * 2 + 2.05 * scale, Canvas.height)
-    area:setType("static")
+------------------------------------------------
+Patient.update = function (self, dt)
 end
 
-Patient.update = function (self, dt)
-    
+--------------------------------------------------------------------
+Patient.drawArea = function ()
+    local area = World:newRectangleCollider((Canvas.originX + Canvas.width) - 36 * Scale, Canvas.originY + Canvas.height - 32 * Scale, 32 * Scale, 32 * Scale)
+    area:setType("static")
+    area:setCollisionClass("patient")
 end
 
 return Patient
