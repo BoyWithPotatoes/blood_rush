@@ -24,8 +24,8 @@ BloodBag.update = function (self)
 end
 
 ----------------------------------
-BloodBag.drawBox = function ()
-    local hitbox = World:newRectangleCollider(Canvas.originX + 40 * Scale, Canvas.originY + Canvas.height - 28 * Scale, 24 * Scale, 24 * Scale)
+BloodBag.drawHitbox = function ()
+    local hitbox = World:newRectangleCollider(Canvas.originX + 40 * Scale, Canvas.originY + Canvas.height - 30 * Scale, 24 * Scale, 26 * Scale)
     hitbox:setType("static")
     hitbox:setCollisionClass("bloodbag")
 end
