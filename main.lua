@@ -80,7 +80,7 @@ function love.load()
 
     Players = {}
     _Player.new(1, ScreenWidth / 2, ScreenHeight * 6 / 10, {"w", "s", "a", "d", "e"})
-    --_Player.new(2, ScreenWidth / 2, ScreenHeight * 6 / 10, {"up", "down", "left", "right", "p"})
+    _Player.new(2, ScreenWidth / 2, ScreenHeight * 6 / 10, {"up", "down", "left", "right", "p"})
 
     Beds = {}
     _Bed.new()
@@ -107,6 +107,7 @@ function love.draw()
     loadFunc(Donators, "draw")
     loadFunc(Patients, "draw")
     loadFunc(Players, "drawInterButton")
+    
     debug()
 end
 

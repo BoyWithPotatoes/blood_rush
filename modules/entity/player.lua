@@ -39,7 +39,7 @@ Player.new = function (id, x, y, keyBind)
     self.anim8.walk.down = Anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
     self.anim8.walk.left = Anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
     self.anim8.walk.right = Anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
-    self.anim8.shadow = Anim8.newAnimation(self.anim8Grid(7, 8), 1)
+    self.anim8.shadow = Anim8.newAnimation(self.anim8Grid(7, 8))
 
     self.collider = World:newBSGRectangleCollider(
         self.x,
@@ -107,9 +107,13 @@ end
 
 Player.drawItem = function (self)
     if self.hold then
-        self.holdItem.x, self.holdItem.y = self.x, self.y - 24 * Scale
-        self.holdItem.facing = "left"
-        self.holdItem.rotate = math.pi / 2
+        if self.holdItem.name == "bloodbag" then
+            self.holdItem.x, self.holdItem.y = self.x - self.holdItem.width / 2, self.y - self.holdItem.height / 2 - 24 * Scale
+        else
+            self.holdItem.x, self.holdItem.y = self.x, self.y - 24 * Scale
+            self.holdItem.facing = "left"
+            self.holdItem.rotate = math.pi / 2
+        end
         self.holdItem:draw()
     end
 end
@@ -174,19 +178,29 @@ Player.updateInteract = function (self)
     self:donatorInteract()
     self:patientInteract()
     self:bedInteract()
+    self:bloodBagInteract()
+    self:binInteract()
 end
 
 Player.patientInteract = function (self)
-    if self.hold and self.holdItem.name == "patient" then
+    if self.hold then
         if self.sensor:enter("patient") then
-            self.interact = "patient"
+            if self.holdItem.name == "patient" then
+                self.interact = "patient"
+            else
+                self.interact = ""
+            end
         end
     else
         if self.sensor:enter("patient") then
-            self.interact = "patient"
+            if Patients[1] ~= nil and not Patients[1].holded then
+                self.interact = "patient"
+            else
+                self.interact = ""
+            end
         end
         if self.sensor:stay("patient") then
-            if Patients[1] then
+            if Patients[1] ~= nil and not Patients[1].holded then
                 self.interact = "patient"
             else
                 self.interact = ""
@@ -199,16 +213,24 @@ Player.patientInteract = function (self)
 end
 
 Player.donatorInteract = function (self)
-    if self.hold and self.holdItem.name == "donator" then
+    if self.hold then
         if self.sensor:enter("donator") then
-            self.interact = "donator"
+            if self.holdItem.name == "donator" then
+                self.interact = "donator"
+            else
+                self.interact = ""
+            end
         end
     else
         if self.sensor:enter("donator") then
-            self.interact = "donator"
+            if Donators[1] ~= nil and not Donators[1].holded then
+                self.interact = "donator"
+            else
+                self.interact = ""
+            end
         end
         if self.sensor:stay("donator") then
-            if Donators[1] ~= nil then
+            if Donators[1] ~= nil and not Donators[1].holded then
                 self.interact = "donator"
             else
                 self.interact = ""
@@ -225,17 +247,71 @@ Player.bedInteract = function (self)
         if self.sensor:enter("bed") then
             local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
             if next(bed.item) then
-                self.interact = ""
+                if self.holdItem.name == "bloodbag" then
+                    if next(bed.bloodbag) then
+                        self.interact = ""
+                    else
+                        if self.holdItem.state == 0 then
+                            if bed.item.name == "donator" then
+                                self.interact = "bed"
+                            else
+                                self.interact = ""
+                            end
+                        elseif self.holdItem.state == 8 then
+                            if bed.item.name == "patient" then
+                                self.interact = "bed"
+                            else
+                                self.interact = ""
+                            end
+                        else
+                            self.interact = ""
+                        end
+                    end
+                    
+                else
+                    self.interact = ""
+                end
             else
-                self.interact = "bed"
+                if self.holdItem.name == "bloodbag" then
+                    self.interact = ""
+                else
+                    self.interact = "bed"
+                end
             end
         end
         if self.sensor:stay("bed") then
             local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
             if next(bed.item) then
-                self.interact = ""
+                if self.holdItem.name == "bloodbag" then
+                    if next(bed.bloodbag) then
+                        self.interact = ""
+                    else
+                        if self.holdItem.state == 0 then
+                            if bed.item.name == "donator" then
+                                self.interact = "bed"
+                            else
+                                self.interact = ""
+                            end
+                        elseif self.holdItem.state == 8 then
+                            if bed.item.name == "patient" then
+                                self.interact = "bed"
+                            else
+                                self.interact = ""
+                            end
+                        else
+                            self.interact = ""
+                        end
+                    end
+                    
+                else
+                    self.interact = ""
+                end
             else
-                self.interact = "bed"
+                if self.holdItem.name == "bloodbag" then
+                    self.interact = ""
+                else
+                    self.interact = "bed"
+                end
             end
         end
     else
@@ -247,6 +323,45 @@ Player.bedInteract = function (self)
         end
     end
     if self.sensor:exit("bed") then
+        self.interact = ""
+    end
+end
+
+Player.bloodBagInteract = function (self)
+    if self.hold then
+        if self.holdItem.name == "bloodbag" and self.holdItem.state == 0 then
+            if  self.sensor:enter("bloodbag") then
+                self.interact = "bloodbag"
+            end
+        end
+    else
+        if self.sensor:enter("bloodbag") then
+            self.interact = "bloodbag"
+        end
+    end
+    if self.sensor:exit("bloodbag") then
+        self.interact = ""
+    end
+end
+
+Player.binInteract = function (self)
+    if self.hold then
+        if self.sensor:enter("bin") then
+            if self.holdItem.name == "bloodbag" then
+                self.interact = "bin"
+            else
+                self.interact = ""
+            end
+        end
+    else
+        if self.sensor:enter("bin") then
+            self.interact = ""
+        end
+        if self.sensor:stay("bin") then
+            self.interact = ""
+        end
+    end
+    if self.sensor:exit("bin") then
         self.interact = ""
     end
 end
@@ -277,6 +392,8 @@ Player.keypressed = function (self, key)
         self:pressDonator()
         self:pressPatient()
         self:pressBed()
+        self:pressBloodBag()
+        self:pressBin()
     end
 end
 
@@ -317,14 +434,38 @@ end
 Player.pressBed = function (self)
     if self.interact == "bed" then
         local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
-        bed.item = self.holdItem
-        self.hold = false
-        if self.holdItem.name == "donator" then
-            self:updateDonator()
-        elseif self.holdItem.name == "patient" then
-            self:updatePatient()
+        if self.holdItem.name == "donator" or self.holdItem.name == "patient" then
+            bed.item = self.holdItem
+            if self.holdItem.name == "donator" then
+                self:updateDonator()
+            elseif self.holdItem.name == "patient" then
+                self:updatePatient()
+            end
+        elseif self.holdItem.name == "bloodbag" then
+            bed.bloodbag = self.holdItem
         end
-        
+        self.hold = false
+        self.holdItem = {}
+    end
+end
+
+Player.pressBloodBag = function (self)
+    if self.interact == "bloodbag" then
+        if not self.hold then
+            self.hold = true
+            self.holdItem = _BloodBag.new()
+        else
+            if self.holdItem.name == "bloodbag" and self.holdItem.state == 0 then
+                self.hold = false
+                self.holdItem = {}
+            end
+        end
+    end
+end
+
+Player.pressBin = function (self)
+    if self.interact == "bin" then
+        self.hold = false
         self.holdItem = {}
     end
 end
