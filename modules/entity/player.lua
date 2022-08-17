@@ -246,6 +246,30 @@ Player.donatorInteract = function (self)
     end
 end
 
+local checkComp = function (d, p)
+    if d == "O" then
+        return true
+    elseif d == "AB" then
+        if p == "AB" then
+            return true
+        else
+            return false
+        end
+    elseif d == "A" then
+        if p == "A" or p == "AB" then
+            return true
+        else
+            return false
+        end
+    elseif d == "B" then
+        if p == "B" or p == "AB" then
+            return true
+        else
+            return false
+        end
+    end
+end
+
 Player.bedInteract = function (self)
     if self.hold then
         if self.sensor:enter("bed") then
@@ -262,7 +286,7 @@ Player.bedInteract = function (self)
                                 self.interact = ""
                             end
                         elseif self.holdItem.state == 8 then
-                            if bed.item.name == "patient" then
+                            if bed.item.name == "patient" and checkComp(self.holdItem.type, bed.item.type) then
                                 self.interact = "bed"
                             else
                                 self.interact = ""
@@ -297,7 +321,7 @@ Player.bedInteract = function (self)
                                 self.interact = ""
                             end
                         elseif self.holdItem.state == 8 then
-                            if bed.item.name == "patient" then
+                            if bed.item.name == "patient" and checkComp(self.holdItem.type, bed.item.type) then
                                 self.interact = "bed"
                             else
                                 self.interact = ""
