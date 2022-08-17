@@ -32,14 +32,14 @@ BloodBag.draw = function (self)
     self:drawType()
 end
 
-BloodBag.drawType = function (self)
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print(self.type, self.x + self.width / 2, self.y + self.height / 2 - 1 * Scale, 0, 0.5 * Scale, 0.5 * Scale, Font:getWidth(self.type) / 2, FontHeight / 2)
-end
-
 BloodBag.drawBag = function (self)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.draw(Sprite.bloodbag, self.sprite[self.state], self.x, self.y, 0, Scale, Scale)
+end
+
+BloodBag.drawType = function (self)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print(self.type, self.x + self.width / 2, self.y + self.height / 2 - 1 * Scale, 0, 0.5 * Scale, 0.5 * Scale, Font:getWidth(self.type) / 2, FontHeight / 2)
 end
 
 BloodBag.update = function (self)
@@ -48,7 +48,7 @@ end
 
 ----------------------------------
 BloodBag.drawHitbox = function ()
-    local hitbox = World:newRectangleCollider(Canvas.originX + 40 * Scale, Canvas.originY + Canvas.height - 30 * Scale, 24 * Scale, 26 * Scale)
+    local hitbox = World:newRectangleCollider(Canvas.originX + 40 * Scale, Canvas.originY + Canvas.height - 30 * Scale, 20 * Scale, 26 * Scale)
     hitbox:setType("static")
     hitbox:setCollisionClass("bloodbag")
 end

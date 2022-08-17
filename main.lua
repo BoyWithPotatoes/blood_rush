@@ -5,74 +5,21 @@ local loadFunc = function (table, func, arg)
     end
 end
 
-TableFind = function (table, item)
-    for i, v in pairs(table) do
-        if v == item then
-            return i
+local function playerPos ()
+    if #Players > 1 then
+        if Players[1].y > Players[2].y then
+            local middle = Players[1]
+            Players[1] = Players[2]
+            Players[2] = middle
         end
     end
-    return -1
 end
 
-function love.load()
-    -- library
-    WindField = require("library.windfield")
-    Timer = require("library.timer")
-    Anim8 = require("library.anim8")
-    Flux = require("library.flux")
+-- state
+local menu = {}
 
-    --module
-    _Bound = require("modules.bound")
-    _Player = require("modules.entity.player")
-    _Bed = require("modules.entity.bed")
-    _Donator = require("modules.entity.donator")
-    _Patient = require("modules.entity.patient")
-    _BloodBag = require("modules.tools.bloodbag")
-    _Bin = require("modules.tools.bin")
-
-    -- setup
-    love.graphics.setDefaultFilter("nearest", "nearest")
-    love.graphics.setFont(
-        love.graphics.newImageFont(
-            "assets/font/pixel_font.png",
-            " abcdefghijklmnopqrstuvwxyz"..
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0"..
-            "123456789.,!?-+/():;%&`'*#=[]\""
-        )
-    )
-    Font = love.graphics.getFont()
-    FontHeight = Font:getHeight()
-
-    World = WindField.newWorld(0, 0)
-    World:addCollisionClass("wall")
-    World:addCollisionClass("bed")
-    World:addCollisionClass("donator")
-    World:addCollisionClass("patient")
-    World:addCollisionClass("bloodbag")
-    World:addCollisionClass("bin")
-    World:addCollisionClass("player", {ignores = {"player"}})
-    World:addCollisionClass("plrSensor", {ignores = {"All"}})
-    World:setQueryDebugDrawing(true)
-
-    -- global variable
-    ScreenWidth, ScreenHeight = love.graphics.getDimensions()
-    AspetRatio = ScreenWidth / ScreenHeight
-    ScaleHeight = ScreenHeight / 32
-    ScaleWidth = ScreenWidth / 32
-    Scale = ScaleHeight / 5
-
-    Canvas = _Bound.new(100 / 80)
-
-    TypeList = {"A", "B", "AB", "O"}
-    Sprite = {
-        doctor = {
-            love.graphics.newImage("assets/sprites/doctor/1_sheet.png")
-        },
-        bed = love.graphics.newImage("assets/sprites/stuff/bed.png"),
-        bloodbag = love.graphics.newImage("assets/sprites/stuff/bloodbag.png")
-    }
-
-    ------------------------------------------------------------------------------------------------------------
+local game = {}
+function game:enter()
     _Patient.drawHitbox()
     _Donator.drawHitbox()
     _BloodBag.drawHitbox()
@@ -96,9 +43,14 @@ function love.load()
     _Patient.new()
     _Patient.new()
     _Patient.new()
+
+    Boxs = {}
+    for _, v in pairs(TypeList) do
+        _Box.new(v)
+    end
 end
 
-function love.draw()
+function game:draw()
     Canvas:draw()
     loadFunc(Players, "drawShadow")
     loadFunc(Beds, "drawShadow")
@@ -106,25 +58,14 @@ function love.draw()
     loadFunc(Players, "draw")
     loadFunc(Donators, "draw")
     loadFunc(Patients, "draw")
+    loadFunc(Boxs, "draw")
     loadFunc(Players, "drawInterButton")
-    
+
     debug()
 end
 
-local function playerPos ()
-    if #Players > 1 then
-        if Players[1].y > Players[2].y then
-            local middle = Players[1]
-            Players[1] = Players[2]
-            Players[2] = middle
-        end
-    end
-end
-
-function love.update(dt)
+function game:update(dt)
     World:update(dt)
-    Timer.update(dt)
-    Flux.update(dt)
     playerPos()
     loadFunc(Players, "update", dt)
     loadFunc(Beds, "update", dt)
@@ -132,11 +73,84 @@ function love.update(dt)
     loadFunc(Patients, "update", dt)
 end
 
-function love.keypressed(key)
+function game:keypressed(key)
     loadFunc(Players, "keypressed", key)
     if key == "kp0" then
         love.event.quit()
     end
+end
+
+function love.load()
+    -- library
+    WindField = require("library.windfield")
+    Timer = require("library.timer")
+    Anim8 = require("library.anim8")
+    Flux = require("library.flux")
+    GameState = require("library.gamestate")
+
+    --object
+    _Bound = require("modules.bound")
+    _Player = require("modules.entity.player")
+    _Bed = require("modules.entity.bed")
+    _Donator = require("modules.entity.donator")
+    _Patient = require("modules.entity.patient")
+    _BloodBag = require("modules.tools.bloodbag")
+    _Bin = require("modules.tools.bin")
+    _Box = require("modules.tools.box")
+
+    -- setup
+    love.graphics.setDefaultFilter("nearest", "nearest")
+    love.graphics.setFont(
+        love.graphics.newImageFont(
+            "assets/font/pixel_font.png",
+            " abcdefghijklmnopqrstuvwxyz"..
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0"..
+            "123456789.,!?-+/():;%&`'*#=[]\""
+        )
+    )
+    Font = love.graphics.getFont()
+    FontHeight = Font:getHeight()
+
+    World = WindField.newWorld(0, 0)
+    World:addCollisionClass("wall")
+    World:addCollisionClass("bed")
+    World:addCollisionClass("donator")
+    World:addCollisionClass("patient")
+    World:addCollisionClass("bloodbag")
+    World:addCollisionClass("bin")
+    World:addCollisionClass("box")
+    World:addCollisionClass("player", {ignores = {"player"}})
+    World:addCollisionClass("plrSensor", {ignores = {"All"}})
+    World:setQueryDebugDrawing(true)
+
+    -- global variable
+    ScreenWidth, ScreenHeight = love.graphics.getDimensions()
+    AspetRatio = ScreenWidth / ScreenHeight
+    ScaleHeight = ScreenHeight / 32
+    ScaleWidth = ScreenWidth / 32
+    Scale = ScaleHeight / 5
+
+    Canvas = _Bound.new(100 / 80)
+
+    TypeList = {"A", "B", "AB", "O"}
+    Sprite = {
+        doctor = {
+            love.graphics.newImage("assets/sprites/doctor/1_sheet.png")
+        },
+        bed = love.graphics.newImage("assets/sprites/stuff/bed.png"),
+        hanger = love.graphics.newImage("assets/sprites/stuff/hanger.png"),
+        bloodbag = love.graphics.newImage("assets/sprites/stuff/bloodbag.png"),
+    }
+
+    ------------------------------------------------------------------------------------------------------------
+
+    GameState.registerEvents()
+	GameState.switch(game)
+end
+
+function love.update(dt)
+    Timer.update(dt)
+    Flux.update(dt)
 end
 
 -- debugging

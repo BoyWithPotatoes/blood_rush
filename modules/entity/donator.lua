@@ -16,8 +16,8 @@ Donator.new = function (t)
     self.y = nil
     self.rotate = 0
     self.facing = "up"
+    self.state = "idle"
     self.holded = false
-    self.walk = false
 
     self.spriteSheet = Sprite.doctor[1]
     self.anim8Grid = Anim8.newGrid(32, 32, self.spriteSheet:getWidth(), self.spriteSheet:getHeight())
@@ -27,6 +27,13 @@ Donator.new = function (t)
     self.anim8.idle.down = Anim8.newAnimation(self.anim8Grid("1-6", 1), 0.0416667)
     self.anim8.idle.left = Anim8.newAnimation(self.anim8Grid("1-6", 3), 0.0416667)
     self.anim8.idle.right = Anim8.newAnimation(self.anim8Grid("1-6", 5), 0.0416667)
+    self.anim8.walk = {}
+    self.anim8.walk.up = Anim8.newAnimation(self.anim8Grid("1-6", 8), 0.0833333)
+    self.anim8.walk.down = Anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
+    self.anim8.walk.left = Anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
+    self.anim8.walk.right = Anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
+    self.anim8.shadow = Anim8.newAnimation(self.anim8Grid(7, 8))
+    self.timer = love.math.random(4, 9)
 
     self.anim8.idle.up:gotoFrame(6)
     self.anim8.idle.down:gotoFrame(6)
@@ -53,16 +60,49 @@ end
 
 Donator.draw = function (self)
     self:drawSprite()
+    self:drawShadow()
+    self:drawType()
+end
+
+Donator.drawType = function (self)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print(self.type, self.x, self.y - self.height * 2 / 4, 0, 0.5 * Scale, 0.5 * Scale, Font:getWidth(self.type) / 2, FontHeight / 2)
 end
 
 Donator.drawSprite = function (self)
-    if self.holded then return end
-    love.graphics.setColor(1, 1, 1, 1)
-    self.anim8.idle[self.facing]:draw(self.spriteSheet, self.x, self.y, self.rotate, Scale, Scale, 32 / 2, 32 / 2)
+    if not self.holded then
+        love.graphics.setColor(1, 1, 1, 1)
+        self.anim8[self.state][self.facing]:draw(self.spriteSheet, self.x, self.y, self.rotate, Scale, Scale, 32 / 2, 32 / 2)
+    end
 end
+
+Donator.drawShadow = function (self)
+    if not self.holded and self.facing == "up" then
+        love.graphics.setColor(1, 1, 1, 0.3)
+        self.anim8.shadow:draw(self.spriteSheet, self.x, self.y + 2 * Scale, 0, Scale, Scale, 32 / 2, 32 / 2)
+    end
+end
+
 --------------------------------------------------------
 Donator.update = function (self, dt)
-    --self.anim8.idle[self.facing]:update(dt)
+    self:upadteAnim8(dt)
+end
+
+Donator.upadteAnim8 = function (self, dt)
+    if self.state == "walk" then
+        self.anim8[self.state][self.facing]:update(dt)
+        self.timer = math.floor((dt * 10000) % 10) < 4 and 4 or math.floor((dt * 10000) % 10)
+    else
+        self.timer = self.timer - dt
+        if self.timer <= 0 then
+            self.anim8.idle[self.facing]:update(dt)
+            if self.timer <= -0.25 then
+                self.timer = math.floor((dt * 10000) % 10) < 4 and 4 or math.floor((dt * 10000) % 10)
+            end
+        else
+            self.anim8.idle[self.facing]:gotoFrame(6)
+        end
+    end
 end
 
 -------------------------------------------------------

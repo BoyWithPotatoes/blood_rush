@@ -30,6 +30,7 @@ Bound.createWall = function (self)
     self.wall.bototm = World:newRectangleCollider(self.originX, self.height - 4 * Scale, self.width, 4 * Scale)
     self.wall.donator = World:newRectangleCollider(self.originX + 36 * Scale, self.originY + self.height - 32 * Scale, 4 * Scale, 32 * Scale)
     self.wall.patient = World:newRectangleCollider(self.originX + self.width - 40 * Scale, self.originY + self.height - 32 * Scale, 4 * Scale, 32 * Scale)
+    self.wall.tools = World:newRectangleCollider(self.originX + 40 * Scale, self.originY + self.height - 30 * Scale - 2, 120 * Scale, 26 * Scale + 2)
 
     for _, v in pairs(self.wall) do
         v:setType("static")

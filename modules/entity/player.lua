@@ -18,6 +18,7 @@ Player.new = function (id, x, y, keyBind)
 
     -- state
     self.facing = "down"
+    self.pose = "normal"
     self.interact = ""
     self.speed = Canvas.width / 3
     self.walk = false
@@ -30,15 +31,17 @@ Player.new = function (id, x, y, keyBind)
     self.anim8Grid = Anim8.newGrid(32, 32, self.spriteSheet:getWidth(), self.spriteSheet:getHeight())
     self.anim8 = {}
     self.anim8.idle = {}
-    self.anim8.idle.up = Anim8.newAnimation(self.anim8Grid("1-6", 7), 0.0416667)
-    self.anim8.idle.down = Anim8.newAnimation(self.anim8Grid("1-6", 1), 0.0416667)
-    self.anim8.idle.left = Anim8.newAnimation(self.anim8Grid("1-6", 3), 0.0416667)
-    self.anim8.idle.right = Anim8.newAnimation(self.anim8Grid("1-6", 5), 0.0416667)
+    self.anim8.idle.normal = {}
+    self.anim8.idle.normal.up = Anim8.newAnimation(self.anim8Grid("1-6", 7), 0.0416667)
+    self.anim8.idle.normal.down = Anim8.newAnimation(self.anim8Grid("1-6", 1), 0.0416667)
+    self.anim8.idle.normal.left = Anim8.newAnimation(self.anim8Grid("1-6", 3), 0.0416667)
+    self.anim8.idle.normal.right = Anim8.newAnimation(self.anim8Grid("1-6", 5), 0.0416667)
     self.anim8.walk = {}
-    self.anim8.walk.up = Anim8.newAnimation(self.anim8Grid("1-6", 8), 0.0833333)
-    self.anim8.walk.down = Anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
-    self.anim8.walk.left = Anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
-    self.anim8.walk.right = Anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
+    self.anim8.walk.normal = {}
+    self.anim8.walk.normal.up = Anim8.newAnimation(self.anim8Grid("1-6", 8), 0.0833333)
+    self.anim8.walk.normal.down = Anim8.newAnimation(self.anim8Grid("1-6", 2), 0.0833333)
+    self.anim8.walk.normal.left = Anim8.newAnimation(self.anim8Grid("1-7", 4), 0.0833333)
+    self.anim8.walk.normal.right = Anim8.newAnimation(self.anim8Grid("1-7", 6), 0.0833333)
     self.anim8.shadow = Anim8.newAnimation(self.anim8Grid(7, 8))
 
     self.collider = World:newBSGRectangleCollider(
@@ -73,9 +76,9 @@ Player.anim8Draw = function (self)
     local y = self.y - self.height / 5.5
     love.graphics.setColor(1, 1, 1, 1)
     if self.walk then
-        self.anim8.walk[self.facing]:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
+        self.anim8.walk[self.pose][self.facing]:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
     else
-        self.anim8.idle[self.facing]:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
+        self.anim8.idle[self.pose][self.facing]:draw(self.spriteSheet, self.x, y, 0, Scale, Scale, 32 / 2, 32 / 2)
     end
 end
 
@@ -108,9 +111,9 @@ end
 Player.drawItem = function (self)
     if self.hold then
         if self.holdItem.name == "bloodbag" then
-            self.holdItem.x, self.holdItem.y = self.x - self.holdItem.width / 2, self.y - self.holdItem.height / 2 - 24 * Scale
+            self.holdItem.x, self.holdItem.y = self.x - self.holdItem.width / 2, self.y - self.holdItem.height / 2 - 22 * Scale
         else
-            self.holdItem.x, self.holdItem.y = self.x, self.y - 24 * Scale
+            self.holdItem.x, self.holdItem.y = self.x, self.y - 20 * Scale
             self.holdItem.facing = "left"
             self.holdItem.rotate = math.pi / 2
         end
@@ -179,6 +182,7 @@ Player.updateInteract = function (self)
     self:patientInteract()
     self:bedInteract()
     self:bloodBagInteract()
+    self:boxInteract()
     self:binInteract()
 end
 
@@ -316,10 +320,36 @@ Player.bedInteract = function (self)
         end
     else
         if self.sensor:enter("bed") then
-            self.interact = ""
+            local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
+            if next(bed.bloodbag) then
+                if bed.bloodbag.state == 8 then
+                    if bed.item.name == "donator" then
+                        self.interact = "bed"
+                    else
+                        self.interact = ""
+                    end
+                else
+                    self.interact = ""
+                end
+            else
+                self.interact = ""
+            end
         end
         if self.sensor:stay("bed") then
-            self.interact = ""
+            local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
+            if next(bed.bloodbag) then
+                if bed.bloodbag.state == 8 then
+                    if bed.item.name == "donator" then
+                        self.interact = "bed"
+                    else
+                        self.interact = ""
+                    end
+                else
+                    self.interact = ""
+                end
+            else
+                self.interact = ""
+            end
         end
     end
     if self.sensor:exit("bed") then
@@ -340,6 +370,47 @@ Player.bloodBagInteract = function (self)
         end
     end
     if self.sensor:exit("bloodbag") then
+        self.interact = ""
+    end
+end
+
+Player.boxInteract = function (self)
+    if self.hold then
+        if self.sensor:enter("box") then
+            local box = self.sensor:getEnterCollisionData("box").collider:getObject()
+            if self.holdItem.name == "bloodbag" and self.holdItem.state == 8 and self.holdItem.type == box.type then
+                self.interact = "box"
+            else
+                self.interact = ""
+            end
+        end
+        if self.sensor:stay("box") then
+            local box = self.sensor:getEnterCollisionData("box").collider:getObject()
+            if self.holdItem.name == "bloodbag" and self.holdItem.state == 8 and self.holdItem.type == box.type and box.current < box.max then
+                self.interact = "box"
+            else
+                self.interact = ""
+            end
+        end
+    else
+        if self.sensor:enter("box") then
+            local box = self.sensor:getEnterCollisionData("box").collider:getObject()
+            if box.current > 0 then
+                self.interact = "box"
+            else
+                self.interact = ""
+            end
+        end
+        if self.sensor:stay("box") then
+            local box = self.sensor:getEnterCollisionData("box").collider:getObject()
+            if box.current > 0 then
+                self.interact = "box"
+            else
+                self.interact = ""
+            end
+        end
+    end
+    if self.sensor:exit("box") then
         self.interact = ""
     end
 end
@@ -367,18 +438,23 @@ Player.binInteract = function (self)
 end
 
 Player.anim8Update = function (self, dt)
+    if self.hold then
+        self.pose = "normal"
+    else
+        self.pose = "normal"
+    end
     if self.walk then
-        self.anim8.walk[self.facing]:update(dt)
+        self.anim8.walk[self.pose][self.facing]:update(dt)
         self.timer = math.floor((dt * 10000) % 10) < 4 and 4 or math.floor((dt * 10000) % 10)
     else
         self.timer = self.timer - dt
         if self.timer <= 0 then
-            self.anim8.idle[self.facing]:update(dt)
+            self.anim8.idle[self.pose][self.facing]:update(dt)
             if self.timer <= -0.25 then
                 self.timer = math.floor((dt * 10000) % 10) < 4 and 4 or math.floor((dt * 10000) % 10)
             end
         else
-            self.anim8.idle[self.facing]:gotoFrame(6)
+            self.anim8.idle[self.pose][self.facing]:gotoFrame(6)
         end
     end
 end
@@ -386,14 +462,14 @@ end
 ---------------------------------------------------------
 Player.keypressed = function (self, key)
     if key == self.keyBind[5] then
-        if self.interact == "" then
-            return
+        if self.interact ~= "" then
+            self:pressDonator()
+            self:pressPatient()
+            self:pressBed()
+            self:pressBloodBag()
+            self:pressBox()
+            self:pressBin()
         end
-        self:pressDonator()
-        self:pressPatient()
-        self:pressBed()
-        self:pressBloodBag()
-        self:pressBin()
     end
 end
 
@@ -434,19 +510,135 @@ end
 Player.pressBed = function (self)
     if self.interact == "bed" then
         local bed = self.sensor:getEnterCollisionData("bed").collider:getObject()
-        if self.holdItem.name == "donator" or self.holdItem.name == "patient" then
-            bed.item = self.holdItem
-            if self.holdItem.name == "donator" then
-                self:updateDonator()
-            elseif self.holdItem.name == "patient" then
-                self:updatePatient()
+        if self.hold then
+            if self.holdItem.name == "donator" or self.holdItem.name == "patient" then
+                bed.item = self.holdItem
+                if self.holdItem.name == "donator" then
+                    self:updateDonator()
+                elseif self.holdItem.name == "patient" then
+                    self:updatePatient()
+                end
+            elseif self.holdItem.name == "bloodbag" then
+                bed.bloodbag = self.holdItem
+                if bed.item.name == "donator" then
+                    self:updateDonatorBloodBag(bed)
+                elseif bed.item.name == "patient" then
+                    self:updatePatientBloodBag(bed)
+                end
             end
-        elseif self.holdItem.name == "bloodbag" then
-            bed.bloodbag = self.holdItem
+            self.hold = false
+            self.holdItem = {}
+        else
+            self.holdItem = bed.bloodbag
+            self.hold = true
+            bed.bloodbag = {}
+            bed.item  = {}
         end
-        self.hold = false
-        self.holdItem = {}
     end
+end
+
+Player.updateDonator = function ()
+    Donators[1] = nil
+    Timer.after(0.72, function ()
+        Donators[2].state = "walk"
+        Flux.to(Donators[2], 0.3, {y = Donators[2].y - 14 * Scale, x = Donators[2].x}):ease("linear")
+        Timer.after(0.31, function ()
+            Donators[2].state = "idle"
+            Donators[3].state = "walk"
+            Flux.to(Donators[3], 0.3, {y = Donators[3].y - 14 * Scale, x = Donators[3].x}):ease("linear")
+        end)
+        Timer.after(0.6, function ()
+            Donators[3].state = "idle"
+            Donators[1] = Donators[2]
+            Donators[2] = Donators[3]
+            Donators[3] = nil
+            local newItem = _Donator.new()
+            newItem.y = newItem.y + 14 * Scale
+            Flux.to(newItem, 0.3, {y = newItem.y - 14 * Scale}):ease("linear")
+        end)
+    end)
+end
+
+Player.updatePatient = function ()
+    Patients[1] = nil
+    Timer.after(0.72, function ()
+        Patients[2].state = "walk"
+        Flux.to(Patients[2], 0.3, {y = Patients[2].y - 14 * Scale, x = Patients[2].x}):ease("linear")
+        Timer.after(0.31, function ()
+            Patients[2].state = "idle"
+            Patients[3].state = "walk"
+            Flux.to(Patients[3], 0.3, {y = Patients[3].y - 14 * Scale, x = Patients[3].x}):ease("linear")
+        end)
+        Timer.after(0.6, function ()
+            Patients[3].state = "idle"
+            Patients[1] = Patients[2]
+            Patients[2] = Patients[3]
+            Patients[3] = nil
+            local newItem = _Patient.new()
+            newItem.y = newItem.y + 14 * Scale
+            Flux.to(newItem, 0.3, {y = newItem.y - 14 * Scale}):ease("linear")
+        end)
+    end)
+end
+
+local time = 6
+Player.updateDonatorBloodBag = function (_, bed)
+    Timer.after(time / 9, function ()
+        bed.bloodbag.state = 1
+        Timer.after(time / 9, function ()
+            bed.bloodbag.state = 2
+            Timer.after(time / 9, function ()
+                bed.bloodbag.state = 3
+                Timer.after(time / 9, function ()
+                    bed.bloodbag.state = 4
+                    Timer.after(time / 9, function ()
+                        bed.bloodbag.state = 5
+                        Timer.after(time / 9, function ()
+                            bed.bloodbag.state = 6
+                            Timer.after(time / 9, function ()
+                                bed.bloodbag.state = 7
+                                Timer.after(time / 9, function ()
+                                    bed.bloodbag.state = 8
+                                    bed.bloodbag.type = bed.item.type
+                                end)
+                            end)
+                        end)
+                    end)
+                end)
+            end)
+        end)
+    end)
+end
+
+Player.updatePatientBloodBag = function (_, bed)
+    Timer.after(time / 9, function ()
+        bed.bloodbag.state = 7
+        Timer.after(time / 9, function ()
+            bed.bloodbag.state = 6
+            Timer.after(time / 9, function ()
+                bed.bloodbag.state = 5
+                Timer.after(time / 9, function ()
+                    bed.bloodbag.state = 4
+                    Timer.after(time / 9, function ()
+                        bed.bloodbag.state = 3
+                        Timer.after(time / 9, function ()
+                            bed.bloodbag.state = 2
+                            Timer.after(time / 9, function ()
+                                bed.bloodbag.state = 1
+                                Timer.after(time / 9, function ()
+                                    bed.bloodbag.state = 0
+                                    Timer.after(time / 9, function ()
+                                        bed.bloodbag = {}
+                                        bed.item = {}
+                                    end)
+                                end)
+                            end)
+                        end)
+                    end)
+                end)
+            end)
+        end)
+    end)
 end
 
 Player.pressBloodBag = function (self)
@@ -463,47 +655,26 @@ Player.pressBloodBag = function (self)
     end
 end
 
+Player.pressBox = function (self)
+    if self.interact == "box" then
+        local box = self.sensor:getEnterCollisionData("box").collider:getObject()
+        if self.hold then
+            box.current = box.current + 1
+            self.hold = false
+            self.holdItem = true
+        else
+            box.current = box.current - 1
+            self.hold = true
+            self.holdItem = _BloodBag.new(box.type, 8)
+        end
+    end
+end
+
 Player.pressBin = function (self)
     if self.interact == "bin" then
         self.hold = false
         self.holdItem = {}
     end
-end
-
-Player.updateDonator = function ()
-    Donators[1] = nil
-    Timer.after(0.72, function ()
-        Flux.to(Donators[2], 0.3, {y = Donators[2].y - 14 * Scale, x = Donators[2].x}):ease("linear")
-        Timer.after(0.34, function ()
-            Flux.to(Donators[3], 0.3, {y = Donators[3].y - 14 * Scale, x = Donators[3].x}):ease("linear")
-        end)
-        Timer.after(0.8, function ()
-            Donators[1] = Donators[2]
-            Donators[2] = Donators[3]
-            Donators[3] = nil
-            local newItem = _Donator.new()
-            newItem.y = newItem.y + 14 * Scale
-            Flux.to(newItem, 0.3, {y = newItem.y - 14 * Scale}):ease("linear")
-        end)
-    end)
-end
-
-Player.updatePatient = function ()
-    Patients[1] = nil
-    Timer.after(0.72, function ()
-        Flux.to(Patients[2], 0.3, {y = Patients[2].y - 14 * Scale, x = Patients[2].x}):ease("linear")
-        Timer.after(0.34, function ()
-            Flux.to(Patients[3], 0.3, {y = Patients[3].y - 14 * Scale, x = Patients[3].x}):ease("linear")
-        end)
-        Timer.after(0.8, function ()
-            Patients[1] = Patients[2]
-            Patients[2] = Patients[3]
-            Patients[3] = nil
-            local newItem = _Patient.new()
-            newItem.y = newItem.y + 14 * Scale
-            Flux.to(newItem, 0.3, {y = newItem.y - 14 * Scale}):ease("linear")
-        end)
-    end)
 end
 
 return Player

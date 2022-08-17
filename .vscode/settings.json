@@ -1,11 +1,13 @@
 {
     "Lua.diagnostics.globals": [
-        "love"
+        "love",
+        "loadFunc"
     ],
     "Lua.workspace.checkThirdParty": false,
     "Lua.diagnostics.disable": [
         "deprecated",
-        "param-type-mismatch"
+        "param-type-mismatch",
+        "redundant-parameter"
     ]
     
 }

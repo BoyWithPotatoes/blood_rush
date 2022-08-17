@@ -18,7 +18,7 @@ end
 
 ----------------------------------
 Bin.drawHitbox = function ()
-    local hitbox = World:newRectangleCollider(Canvas.originX + Canvas.width - 64 * Scale, Canvas.originY + Canvas.height - 30 * Scale, 24 * Scale, 26 * Scale)
+    local hitbox = World:newRectangleCollider(Canvas.originX + Canvas.width - 60 * Scale, Canvas.originY + Canvas.height - 30 * Scale, 20 * Scale, 26 * Scale)
     hitbox:setType("static")
     hitbox:setCollisionClass("bin")
 end

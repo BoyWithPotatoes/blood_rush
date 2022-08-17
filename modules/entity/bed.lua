@@ -36,10 +36,16 @@ end
 
 ---------------------------------------------
 Bed.draw = function (self)
+    self:drawHanger()
     self:drawBed()
     self:drawItem()
     self:drawLegs()
     self:drawBloodBag()
+end
+
+Bed.drawHanger = function (self)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(Sprite.hanger, self.x + 2 * Scale, self.y - 22 * Scale, 0, Scale, Scale)
 end
 
 Bed.drawBed = function (self)
@@ -48,13 +54,12 @@ Bed.drawBed = function (self)
 end
 
 Bed.drawItem = function (self)
-    if not next(self.item) then
-        return
+    if next(self.item) then
+        self.item.x, self.item.y = self.x + self.width / 2, self.y + self.height / 2 - 1 * Scale
+        self.item.facing = "down"
+        self.item.rotate = 0
+        self.item:draw()
     end
-    self.item.x, self.item.y = self.x + self.width / 2, self.y + self.height / 2 - 1 * Scale
-    self.item.facing = "down"
-    self.item.rotate = 0
-    self.item:draw()
 end
 
 Bed.drawLegs = function (self)
